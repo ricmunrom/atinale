@@ -1,0 +1,1 @@
+# Sync automático eliminado — resultados se cargan manualmente via POST /sync/resultado

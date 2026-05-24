@@ -1,0 +1,1 @@
+# Cron eliminado — resultados se cargan manualmente via POST /sync/resultado
