@@ -703,7 +703,7 @@ function InfoPage({ envios }) {
         <div className="icard">
           <div className="icard-title">Cómo funciona la integridad</div>
           <div style={{fontSize:12,color:G.muted,lineHeight:1.7}}>
-            <p style={{marginBottom:8}}>Al enviar, el servidor genera un <strong style={{color:G.text}}>hash SHA-256</strong> del JSON y lo manda a tu correo.</p>
+          <p style={{marginBottom:8}}>Al enviar, el servidor genera un <strong style={{color:G.text}}>hash SHA-256</strong> del JSON y se descarga automáticamente en tu navegador.</p>
             <p style={{marginBottom:8}}>Si alguien modifica el pronóstico en el servidor, <strong style={{color:G.text}}>el hash no coincidirá</strong>.</p>
             <p>Carga tu JSON aquí para verificar que nadie manipuló tu documento.</p>
           </div>
