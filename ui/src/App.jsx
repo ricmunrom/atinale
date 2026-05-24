@@ -261,7 +261,7 @@ function ConfirmModal({ draft, partidos, onConfirm, onCancel, sending }) {
       <div className="modal">
         <div className="mtitle">Confirmar Envío</div>
         <div className="msub">Revisa tus {partidos.length} pronósticos.</div>
-        <div className="mwarn">⚠️ Una vez enviado es inmutable. Se genera un hash SHA-256 y recibes el JSON por correo.</div>
+        <div className="mwarn">⚠️ Una vez enviado es inmutable. Se genera un hash SHA-256 y se descarga el JSON directo en el navegador.</div>
         <div className="mlist">
           {partidos.map(p => {
             const v = draft[p.id];
@@ -299,7 +299,7 @@ function PronViewer({ envio, user, partidos, onBack, currentUserId }) {
       <div className="ehash">
         <div className="ehl">Hash SHA-256 · Contrato de integridad</div>
         <div className="ehv">{envio.hash}</div>
-        <div className="ehm">Hash público · Verifica en Info & Verificar cargando el JSON de tu correo</div>
+        <div className="ehm">Hash público · Verifica en Info & Verificar cargando el JSON de tu navegador</div>
       </div>
       <div className="pgrid">
         {partidos.map(p => {
@@ -335,7 +335,7 @@ function LandingPage({ onLogin, loading, error }) {
         <div className="dtitle">Antes de continuar</div>
         <div className="ditem"><span>⚽</span><span><strong>Atínale</strong> es una plataforma de pronósticos deportivos para uso privado entre participantes conocidos.</span></div>
         <div className="ditem"><span>🚫</span><span><strong>No gestiona ni transfiere dinero</strong>. Cualquier acuerdo económico es responsabilidad exclusiva de los participantes.</span></div>
-        <div className="ditem"><span>🔒</span><span>Al enviar se genera un <strong>hash SHA-256 inmutable</strong>. Recibes el JSON completo por correo como prueba.</span></div>
+        <div className="ditem"><span>🔒</span><span>Al enviar se genera un <strong>hash SHA-256 inmutable</strong>. Recibes el JSON completo desde tu navegador como prueba.</span></div>
         <div className="ditem"><span>👁</span><span>Los pronósticos son <strong>públicos e inmutables</strong>. Cualquier participante puede verificar la integridad de cualquier documento.</span></div>
         <div className="ditem"><span>💾</span><span>Los borradores viven solo en <strong>tu navegador</strong>. El servidor solo recibe el envío final.</span></div>
         <hr className="divider"/>
@@ -361,7 +361,7 @@ function NewUserPage({ user, onConfirm, loading }) {
         <div className="nu-email">{user.email}</div>
         <div className="nu-disclaimer">
           <p>Al registrarte confirmas que has leído y aceptas las condiciones de uso.</p>
-          <p><strong>Tu pronóstico será inmutable</strong> una vez enviado. Recibirás un JSON por correo como prueba de integridad.</p>
+          <p><strong>Tu pronóstico será inmutable</strong> una vez enviado. Se descargará un JSON pen tu navegador como prueba de integridad.</p>
           <p>Atínale <strong>no gestiona dinero</strong>. Cualquier acuerdo económico es externo a esta plataforma.</p>
         </div>
         <button className="ubtn" onClick={onConfirm} disabled={loading}>
@@ -724,7 +724,7 @@ function InfoPage({ envios }) {
 
       <div className="verif-box">
         <div className="verif-head">
-          <div><div className="verif-title">Verificador de Integridad</div><div style={{fontSize:12,color:G.muted,marginTop:2}}>Carga el JSON que recibiste por correo sin modificarlo</div></div>
+          <div><div className="verif-title">Verificador de Integridad</div><div style={{fontSize:12,color:G.muted,marginTop:2}}>Carga el JSON que recibiste desde tu navegador sin modificarlo</div></div>
           {verifying && <div style={{fontSize:12,color:G.green}}>⟳ Verificando...</div>}
         </div>
         <div className="verif-body">
