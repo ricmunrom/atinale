@@ -597,7 +597,7 @@ function PronosPage({ currentUser, partidos, envios, onEnvioNuevo, setToast }) {
         </div>
       )}
 
-      {["Octavos de Final","Cuartos de Final","Semifinal y Final"].map(f => (
+{["Octavos de Final","Cuartos de Final","Semifinal","Tercer Lugar","Final"].map(f => (
         <div key={f} className="fcard" style={{opacity:0.4}}>
           <div className="fhead"><div><div className="ftitle">{f}</div><div className="fdl">Se habilita al conocerse los clasificados</div></div><span className="stlock">🔒 Bloqueado</span></div>
         </div>
