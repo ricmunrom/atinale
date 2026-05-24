@@ -439,9 +439,20 @@ function TablaPage({ tabla, currentUser, onVerPron, resultados }) {
   );
 }
 
-function PronosPage({ currentUser, partidos, envios, onEnvioNuevo, setToast }) {
-  const DKEY = `atinale_draft_${currentUser.id}_grupos`;
-  const miEnvio = envios.find(e => e.usuario_id===currentUser.id && e.fase==="grupos");
+// Orden y nombres de display de las fases
+const FASES_CONFIG = {
+  grupos:         "Fase de Grupos",
+  dieciseisavos:  "Dieciseisavos de Final",
+  octavos:        "Octavos de Final",
+  cuartos:        "Cuartos de Final",
+  semifinal:      "Semifinal",
+  tercer_lugar:   "Tercer Lugar",
+  final:          "Final",
+};
+const FASES_ORDEN = Object.keys(FASES_CONFIG);
+
+function FaseForm({ fase, partidosFase, miEnvio, currentUser, envios, onEnvioNuevo, setToast }) {
+  const DKEY = `atinale_draft_${currentUser.id}_${fase}`;
   const [viewingUser, setViewingUser] = useState(null);
   const [viewingEnvio, setViewingEnvio] = useState(null);
   const [draft, setDraft] = useState(() => { try { const d=localStorage.getItem(DKEY); return d?JSON.parse(d):{}; } catch { return {}; } });
@@ -451,9 +462,8 @@ function PronosPage({ currentUser, partidos, envios, onEnvioNuevo, setToast }) {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState(null);
 
-  const partidosGrupos = partidos.filter(p => p.fase === "grupos");
-  const filled = partidosGrupos.filter(p => draft[p.id]?.gl!==undefined && draft[p.id]?.gv!==undefined).length;
-  const allFilled = filled === partidosGrupos.length && partidosGrupos.length > 0;
+  const filled = partidosFase.filter(p => draft[p.id]?.gl!==undefined && draft[p.id]?.gv!==undefined).length;
+  const allFilled = filled === partidosFase.length && partidosFase.length > 0;
 
   useEffect(() => { if (!miEnvio) { try { localStorage.setItem(DKEY, JSON.stringify(draft)); } catch {} } }, [draft]);
 
@@ -463,28 +473,23 @@ function PronosPage({ currentUser, partidos, envios, onEnvioNuevo, setToast }) {
   };
   const handleRandom = () => {
     const nd={};
-    partidosGrupos.forEach(p => { const[gl,gv]=randomScore(); nd[p.id]={gl,gv}; });
+    partidosFase.forEach(p => { const[gl,gv]=randomScore(); nd[p.id]={gl,gv}; });
     setDraft(nd); setToast("🎲 Pronósticos aleatorios generados");
   };
-
   const handleSend = async () => {
     setSending(true); setError(null);
     try {
-      // Convertir keys a string para el backend
       const pronosticosPayload = {};
       Object.entries(draft).forEach(([k,v]) => { pronosticosPayload[String(k)] = v; });
-      const resp = await enviarPronosticos("grupos", pronosticosPayload);
-
-      // Descargar el JSON como archivo
+      const resp = await enviarPronosticos(fase, pronosticosPayload);
       const jsonStr = JSON.stringify(resp.json_correo, null, 2);
       const blob = new Blob([jsonStr], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `atinale_grupos_${currentUser.email.split("@")[0]}.json`;
+      a.download = `atinale_${fase}_${currentUser.email.split("@")[0]}.json`;
       a.click();
       URL.revokeObjectURL(url);
-
       try { localStorage.removeItem(DKEY); } catch {}
       setShowConfirm(false);
       onEnvioNuevo();
@@ -498,26 +503,21 @@ function PronosPage({ currentUser, partidos, envios, onEnvioNuevo, setToast }) {
 
   if (viewingUser && viewingEnvio) {
     return (
-      <div className="main">
-        <PronViewer
-          envio={viewingEnvio} user={viewingUser} partidos={partidosGrupos}
-          onBack={() => {setViewingUser(null);setViewingEnvio(null);}}
-          currentUserId={currentUser.id}
-        />
-      </div>
+      <PronViewer
+        envio={viewingEnvio} user={viewingUser} partidos={partidosFase}
+        onBack={() => {setViewingUser(null);setViewingEnvio(null);}}
+        currentUserId={currentUser.id}
+      />
     );
   }
 
   return (
-    <div className="main">
-      <div className="ptitle">Pronósticos</div>
-      <div className="psub">Llena toda la fase y envía de una · Inmutable una vez enviado</div>
-
+    <>
       <div className="fcard">
         <div className="fhead">
           <div>
-            <div className="ftitle">Fase de Grupos</div>
-            <div className="fdl">{partidosGrupos.length} partidos · Cierra antes del partido inaugural</div>
+            <div className="ftitle">{FASES_CONFIG[fase]}</div>
+            <div className="fdl">{partidosFase.length} partidos · Cierra antes del primer partido de la fase</div>
           </div>
           {miEnvio?<span className="stsent">✓ Enviado</span>:<span className="stopen">Abierto</span>}
         </div>
@@ -526,7 +526,7 @@ function PronosPage({ currentUser, partidos, envios, onEnvioNuevo, setToast }) {
             <>
               {showBanner && (
                 <div className="draft-banner">
-                  <span>📝 Borrador guardado — {filled}/{partidosGrupos.length} partidos</span>
+                  <span>📝 Borrador guardado — {filled}/{partidosFase.length} partidos</span>
                   <div className="dba">
                     <button className="btn-dc" onClick={() => setShowBanner(false)}>Continuar</button>
                     <button className="btn-dd" onClick={() => { try{localStorage.removeItem(DKEY)}catch{} setDraft({}); setShowBanner(false); }}>Descartar</button>
@@ -534,22 +534,22 @@ function PronosPage({ currentUser, partidos, envios, onEnvioNuevo, setToast }) {
                 </div>
               )}
               {error && <div className="error-msg">{error}</div>}
-              <div className="prog-wrap"><div className="prog-bar" style={{width:`${partidosGrupos.length?((filled/partidosGrupos.length)*100):0}%`}}/></div>
+              <div className="prog-wrap"><div className="prog-bar" style={{width:`${partidosFase.length?((filled/partidosFase.length)*100):0}%`}}/></div>
               <div className="pfgrid">
-                {partidosGrupos.map(p => {
+                {partidosFase.map(p => {
                   const v=draft[p.id]||{};
                   const ok=v.gl!==undefined&&v.gv!==undefined;
                   return (
                     <div key={p.id} className={`pfrow${ok?" ok":""}`}>
                       <div className="elabel">
-                      <span style={{fontSize:20}}>{BANDERAS[p.equipo_local]||"🏳️"}</span>
+                        <span style={{fontSize:20}}>{BANDERAS[p.equipo_local]||"🏳️"}</span>
                         <div><div>{p.equipo_local}</div>{p.grupo&&<span className="grp">G{p.grupo}</span>}</div>
                       </div>
                       <input className="sinp" type="number" min="0" max="20" placeholder="0" value={v.gl??""} onChange={e=>handleInput(p.id,"gl",e.target.value)}/>
                       <div className="ssep">—</div>
                       <input className="sinp" type="number" min="0" max="20" placeholder="0" value={v.gv??""} onChange={e=>handleInput(p.id,"gv",e.target.value)}/>
                       <div className="elabel r">
-                      <span style={{fontSize:20}}>{BANDERAS[p.equipo_visitante]||"🏳️"}</span>
+                        <span style={{fontSize:20}}>{BANDERAS[p.equipo_visitante]||"🏳️"}</span>
                         <div style={{textAlign:"right"}}>{p.equipo_visitante}</div>
                       </div>
                     </div>
@@ -557,53 +557,96 @@ function PronosPage({ currentUser, partidos, envios, onEnvioNuevo, setToast }) {
                 })}
               </div>
               <div className="ffoot">
-                <span className="fprog">{filled}/{partidosGrupos.length} completados</span>
+                <span className="fprog">{filled}/{partidosFase.length} completados</span>
                 <button className="btn-rnd" onClick={handleRandom}>🎲 Al azar</button>
                 <button className="btn-send" disabled={!allFilled} onClick={() => setShowConfirm(true)}>
-                  {allFilled?"Revisar y enviar →":`Faltan ${partidosGrupos.length-filled}`}
+                  {allFilled?"Revisar y enviar →":`Faltan ${partidosFase.length-filled}`}
                 </button>
               </div>
             </>
           )}
-          {miEnvio && <PronViewer envio={miEnvio} user={currentUser} partidos={partidosGrupos} onBack={null} currentUserId={currentUser.id}/>}
+          {miEnvio && <PronViewer envio={miEnvio} user={currentUser} partidos={partidosFase} onBack={null} currentUserId={currentUser.id}/>}
         </div>
       </div>
 
-      {/* Pronósticos de todos */}
-      {envios.filter(e=>e.fase==="grupos").length > 0 && (
-        <div style={{marginTop:8}}>
-          <div style={{fontSize:11,letterSpacing:3,textTransform:"uppercase",color:G.dim,marginBottom:12}}>Pronósticos de todos los participantes</div>
-          {envios.filter(e=>e.fase==="grupos").map(e => {
-            // Para buscar el usuario necesitamos la tabla — usamos el envio directamente
-            return (
-              <div key={e.id} className="fcard" style={{cursor:"pointer"}}
-                onClick={() => { setViewingUser({id:e.usuario_id, nombre:"Usuario", apellido:"", foto:"", ...e._usuario}); setViewingEnvio(e); }}>
-                <div className="fhead">
-                  <div style={{display:"flex",alignItems:"center",gap:10}}>
-                    {e._usuario?.foto && <img src={e._usuario.foto} alt="" className="uav" onError={e=>e.target.style.display="none"}/>}
-                    <div>
-                      <div className="unm">{e._usuario?.nombre||"Usuario"} {e._usuario?.apellido||""}{e.usuario_id===currentUser.id?" (tú)":""}</div>
-                      <div className="ehv" style={{fontSize:11,marginTop:2}}>{e.hash.slice(0,24)}...</div>
-                    </div>
-                  </div>
-                  <div style={{display:"flex",alignItems:"center",gap:12}}>
-                    <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:28,color:G.green}}>{e.puntos}pts</div>
-                    <span className="stsent">Ver →</span>
+      {/* Pronósticos de todos para esta fase */}
+      {envios.filter(e=>e.fase===fase).length > 0 && (
+        <div style={{marginTop:8,marginBottom:16}}>
+          <div style={{fontSize:11,letterSpacing:3,textTransform:"uppercase",color:G.dim,marginBottom:12}}>
+            Pronósticos · {FASES_CONFIG[fase]}
+          </div>
+          {envios.filter(e=>e.fase===fase).map(e => (
+            <div key={e.id} className="fcard" style={{cursor:"pointer"}}
+              onClick={() => { setViewingUser({id:e.usuario_id, nombre:"Usuario", apellido:"", foto:"", ...e._usuario}); setViewingEnvio(e); }}>
+              <div className="fhead">
+                <div style={{display:"flex",alignItems:"center",gap:10}}>
+                  {e._usuario?.foto && <img src={e._usuario.foto} alt="" className="uav" onError={ev=>ev.target.style.display="none"}/>}
+                  <div>
+                    <div className="unm">{e._usuario?.nombre||"Usuario"} {e._usuario?.apellido||""}{e.usuario_id===currentUser.id?" (tú)":""}</div>
+                    <div className="ehv" style={{fontSize:11,marginTop:2}}>{e.hash.slice(0,24)}...</div>
                   </div>
                 </div>
+                <div style={{display:"flex",alignItems:"center",gap:12}}>
+                  <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:28,color:G.green}}>{e.puntos}pts</div>
+                  <span className="stsent">Ver →</span>
+                </div>
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
       )}
 
-{["Dieciseisavos de Final","Octavos de Final","Cuartos de Final","Semifinal","Tercer Lugar","Final"].map(f => (
-        <div key={f} className="fcard" style={{opacity:0.4}}>
-          <div className="fhead"><div><div className="ftitle">{f}</div><div className="fdl">Se habilita al conocerse los clasificados</div></div><span className="stlock">🔒 Bloqueado</span></div>
+      {showConfirm && <ConfirmModal draft={draft} partidos={partidosFase} onConfirm={handleSend} onCancel={() => setShowConfirm(false)} sending={sending}/>}
+    </>
+  );
+}
+
+function PronosPage({ currentUser, partidos, envios, onEnvioNuevo, setToast }) {
+  // Fases que existen en DB (tienen partidos cargados)
+  const fasesActivas = FASES_ORDEN.filter(fase =>
+    partidos.some(p => p.fase === fase)
+  );
+
+  // Fases que aún no tienen partidos en DB
+  const fasesBloqueadas = FASES_ORDEN.filter(fase =>
+    !partidos.some(p => p.fase === fase)
+  );
+
+  return (
+    <div className="main">
+      <div className="ptitle">Pronósticos</div>
+      <div className="psub">Llena cada fase completa antes de enviar · Inmutable una vez enviado</div>
+
+      {/* Fases activas — tienen partidos en DB */}
+      {fasesActivas.map(fase => {
+        const partidosFase = partidos.filter(p => p.fase === fase);
+        const miEnvio = envios.find(e => e.usuario_id===currentUser.id && e.fase===fase);
+        return (
+          <FaseForm
+            key={fase}
+            fase={fase}
+            partidosFase={partidosFase}
+            miEnvio={miEnvio}
+            currentUser={currentUser}
+            envios={envios}
+            onEnvioNuevo={onEnvioNuevo}
+            setToast={setToast}
+          />
+        );
+      })}
+
+      {/* Fases bloqueadas — no tienen partidos aún */}
+      {fasesBloqueadas.map(fase => (
+        <div key={fase} className="fcard" style={{opacity:0.4}}>
+          <div className="fhead">
+            <div>
+              <div className="ftitle">{FASES_CONFIG[fase]}</div>
+              <div className="fdl">Se habilita al conocerse los clasificados</div>
+            </div>
+            <span className="stlock">🔒 Bloqueado</span>
+          </div>
         </div>
       ))}
-
-      {showConfirm && <ConfirmModal draft={draft} partidos={partidosGrupos} onConfirm={handleSend} onCancel={() => setShowConfirm(false)} sending={sending}/>}
     </div>
   );
 }
